@@ -1,0 +1,25 @@
+{
+    "name": "ennm/php-getui",
+    "description": "PHP个推",
+    "keywords": [
+        "php",
+        "getui"
+    ],
+    "homepage": "https://github.com/ennm/php-getui",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "ennm",
+            "email": "4855121@qq.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Getui\\": "src/"
+        }
+    }
+}
