@@ -1,66 +1,107 @@
 <?php
+namespace GeTui;
 
-namespace Getui;
-header("Content-Type: text/html; charset=utf-8");
-
+/**
+ * Class IGtBatch
+ * @package GeTui
+ */
 class IGtBatch
 {
-    var $batchId;
-    var $innerMsgList = array();
-    var $seqId = 0;
-    var $APPKEY;
-    var $push;
-    var $lastPostData;
+    /**
+     * @var string
+     */
+    public $batchId;
+    /**
+     * @var array
+     */
+    public $innerMsgList = array();
+    /**
+     * @var int
+     */
+    public $seqId = 0;
+    /**
+     * @var string
+     */
+    public $APPKEY;
+    /**
+     * @var string
+     */
+    public $push;
+    /**
+     * @var array
+     */
+    public $lastPostData;
 
+    /**
+     * @param $appkey
+     * @param $push
+     */
     public function __construct($appkey, $push)
     {
         $this->APPKEY = $appkey;
         $this->push = $push;
-        $this->batchId = uniqid();
-
+        $this->batchId = uniqid('', true);
     }
 
+    /**
+     * @return string
+     */
     public function getBatchId()
     {
         return $this->batchId;
     }
 
+    /**
+     * @param $message
+     * @param $target
+     * @return string
+     * @throws \InvalidArgumentException
+     */
     public function add($message, $target)
     {
         if ($this->seqId >= 5000) {
-            throw new \Exception("Can not add over 5000 message once! Please call submit() first.");
+            throw new \InvalidArgumentException('Can not add over 5000 message once! Please call submit() first.');
         } else {
-            $this->seqId += 1;
+            ++$this->seqId;
             $innerMsg = new SingleBatchItem();
-            $innerMsg->set_seqId($this->seqId);
-            $innerMsg->set_data($this->createSingleJson($message, $target));
-            array_push($this->innerMsgList, $innerMsg);
+            $innerMsg->setSeqId($this->seqId);
+            $innerMsg->setData($this->createSingleJson($message, $target));
+            $this->innerMsgList[] = $innerMsg;
         }
-        return $this->seqId . "";
+        return $this->seqId . '';
     }
 
+    /**
+     * @param $message
+     * @param $target
+     * @return string
+     */
     public function createSingleJson($message, $target)
     {
         $params = $this->push->getSingleMessagePostData($message, $target);
         return json_encode($params);
     }
 
+    /**
+     * @return mixed
+     * @throws RequestException
+     */
     public function submit()
     {
-        $requestId = uniqid();
+        $requestId = uniqid('', true);
         $data = array();
-        $data["appkey"] = $this->APPKEY;
-        $data["serialize"] = "pb";
-        $data["async"] = GTConfig::isPushSingleBatchAsync();
-        $data["action"] = "pushMessageToSingleBatchAction";
+        $data['appkey'] = $this->APPKEY;
+        $data['serialize'] = 'pb';
+        $data['async'] = GTConfig::isPushSingleBatchAsync();
+        $data['action'] = 'pushMessageToSingleBatchAction';
         $data['requestId'] = $requestId;
         $singleBatchRequest = new SingleBatchRequest();
-        $singleBatchRequest->set_batchId($this->batchId);
+        $singleBatchRequest->setBatchId($this->batchId);
         foreach ($this->innerMsgList as $index => $innerMsg) {
-            $singleBatchRequest->add_batchItem();
-            $singleBatchRequest->set_batchItem($index, $innerMsg);
+            $singleBatchRequest->addBatchItem();
+            $singleBatchRequest->setBatchItem($index, $innerMsg);
         }
-        $data["singleDatas"] = base64_encode($singleBatchRequest->SerializeToString());
+        $data['singleDatas'] = base64_encode($singleBatchRequest->serializeToString());
         $this->seqId = 0;
         $this->innerMsgList = array();
         $this->lastPostData = $data;
@@ -68,12 +109,19 @@ class IGtBatch
         return $result;
     }
 
+    /**
+     * @return mixed
+     * @throws RequestException
+     */
     public function retry()
     {
         $result = $this->push->httpPostJSON(null, $this->lastPostData, true);
         return $result;
     }
 
+    /**
+     * @param $apiUrl
+     */
     public function setApiUrl($apiUrl)
     {
     }
